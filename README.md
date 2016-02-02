@@ -39,6 +39,8 @@ If not specified, the script will prompt for:
  
 ## Versions
 
+### Unreleased
+
 ### 1.0.0.1
 
 * Minor bug fix: Replaced hardcoded hotfix ID for WMF with test for that version or higher. 
