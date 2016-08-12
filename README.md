@@ -1,4 +1,4 @@
-[![Build status](https://ci.appveyor.com/api/projects/status/b30a0ayk2t21kg7j/branch/master?svg=true)](https://ci.appveyor.com/project/PowerShell/xsafeharbor/branch/master)
+﻿[![Build status](https://ci.appveyor.com/api/projects/status/b30a0ayk2t21kg7j/branch/master?svg=true)](https://ci.appveyor.com/project/PowerShell/xsafeharbor/branch/master)
 
 # xSafeHarbor
 
@@ -43,6 +43,7 @@ If not specified, the script will prompt for:
 ## Versions
 
 ### Unreleased
+* Converted appveyor.yml to install Pester from PSGallery instead of from Chocolatey.
 
 ### 1.0.0.1
 
