@@ -61,7 +61,12 @@ Param (
         [Switch]$Validate,
 
         # If specified, pauses the script execution between various stages of example setup 
-        [Switch]$PauseBetweenStages        
+        [Switch]$PauseBetweenStages,
+        
+        # The Fully qualified computer name for the Safe Harbor File Server 
+        [Parameter(Mandatory)]
+        [String]$SafeHarborFileServerComputerName
+         
 )
 
 $scriptLocation = $PSScriptRoot
@@ -221,8 +226,8 @@ if($Validate.IsPresent) {
     Write-Verbose "Validating - PAPA is allowed to create a SMB Share on SafeHarbor File Server." -Verbose
     $papaCredential = Get-SafeHarborUserCreds -UserName "Corporate\Papa"
     $result = Invoke-Command -ComputerName $vmCorpClient -Authentication Negotiate -Credential $papaCredential -ScriptBlock {
-                    Set-Item WSMan:\localhost\Client\TrustedHosts "shmgmtsrv.safeharbor.contoso.com" -Force 
-                    $psSession = New-PSSession -ComputerName "shmgmtsrv.safeharbor.contoso.com" -Credential $using:papaCredential -Authentication Negotiate -ConfigurationName secure
+                    Set-Item WSMan:\localhost\Client\TrustedHosts $SafeHarborFileServerComputerName -Force 
+                    $psSession = New-PSSession -ComputerName $SafeHarborFileServerComputerName -Credential $using:papaCredential -Authentication Negotiate -ConfigurationName secure
                     Invoke-Command -Session $psSession -ScriptBlock { Get-Command 'New-SMBShare' -Source 'ProxyFunctions' }
                 }
 
@@ -238,8 +243,8 @@ if($Validate.IsPresent) {
     Write-Verbose "Validating - PAPA can create a SMB share on SafeHarbor File Server." -Verbose
     $shareName = 'Share1'
     $result = Invoke-Command -ComputerName $vmCorpClient -Authentication Negotiate -Credential $papaCredential -ScriptBlock {
-                    Set-Item WSMan:\localhost\Client\TrustedHosts "shmgmtsrv.safeharbor.contoso.com" -Force 
-                    $psSession = New-PSSession -ComputerName "shmgmtsrv.safeharbor.contoso.com" -Credential $using:papaCredential -Authentication Negotiate -ConfigurationName secure
+                    Set-Item WSMan:\localhost\Client\TrustedHosts $SafeHarborFileServerComputerName -Force 
+                    $psSession = New-PSSession -ComputerName $SafeHarborFileServerComputerName -Credential $using:papaCredential -Authentication Negotiate -ConfigurationName secure
                     Invoke-Command -Session $psSession -ScriptBlock { New-SmbShare -CimSession "shfileserver.safeharbor.contoso.com" -Path 'C:\Program Files' -Name 'Share1' }
                 }
 
@@ -254,8 +259,8 @@ if($Validate.IsPresent) {
     #3. Validate Share is created on SafeHarbor File Server.
     Write-Verbose "Validating - Share is created on SafeHarbor File Server." -Verbose
     $result = Invoke-Command -ComputerName $vmCorpClient -Authentication Negotiate -Credential $papaCredential -ScriptBlock {
-                    Set-Item WSMan:\localhost\Client\TrustedHosts "shmgmtsrv.safeharbor.contoso.com" -Force 
-                    $psSession = New-PSSession -ComputerName "shmgmtsrv.safeharbor.contoso.com" -Credential $using:papaCredential -Authentication Negotiate -ConfigurationName secure
+                    Set-Item WSMan:\localhost\Client\TrustedHosts $SafeHarborFileServerComputerName -Force 
+                    $psSession = New-PSSession -ComputerName $SafeHarborFileServerComputerName -Credential $using:papaCredential -Authentication Negotiate -ConfigurationName secure
                     Invoke-Command -Session $psSession -ScriptBlock { Get-SmbShare -CimSession "shfileserver.safeharbor.contoso.com"-Name 'Share1' }
                 }
 
