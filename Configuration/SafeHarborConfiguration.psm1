@@ -12,16 +12,16 @@ Configuration DHCPServer
     {
         User Administrator
         {
-            Ensure           = 'Present' 
+            Ensure           = 'Present'
             UserName         = 'Administrator'
             Password         = (Import-Clixml $Node.DHCPAdminCredFile)
         }
-        
+
         xIPAddress DHCPNetwork
         {
-            IPAddress        = $Node.IPAddress
+            IPAddress        = ('{0}/{1}' -f $Node.IPAddress, $Node.PrefixLength)
+            AddressFamily    = 'IPv4'
             InterfaceAlias   = $Node.InterfaceAlias
-            SubnetMask       = $Node.PrefixLength
             DependsOn        = '[User]Administrator'
         }
 
@@ -42,6 +42,7 @@ Configuration DHCPServer
         {
             Ensure           = 'Present'
             Name             = $Node.ScopeName
+            ScopeId          = $Node.ScopeId
             IPStartRange     = $Node.StartRange
             IPEndRange       = $Node.EndRange
             SubnetMask       = $Node.SubnetMask
@@ -95,7 +96,7 @@ Configuration DomainController
         # Reset .\Administrator password.
         User Administrator
         {
-            Ensure           = 'Present' 
+            Ensure           = 'Present'
             UserName         = 'Administrator'
             Password         = (Import-Clixml $Node.DomainCredFile)
         }
@@ -119,8 +120,8 @@ Configuration DomainController
             DomainAdministratorCredential = (Import-Clixml $Node.DomainCredFile)
             SafemodeAdministratorPassword = (Import-Clixml $Node.DomainCredFile)
             DependsOn                     = '[WindowsFeature]ADDS'
-        }  
-                
+        }
+
         xDnsServerZoneTransfer Setting
         {
             Name             = $Node.DomainName
@@ -189,7 +190,7 @@ Configuration CorpClient
             Ensure           = 'Present'
             GroupName        = 'Administrators'
             MembersToInclude = @('Corporate\PAPA','Corporate\DeptHead')
-            Credential       = (Import-CliXML $Node.DomainCredFile)            
+            Credential       = (Import-CliXML $Node.DomainCredFile)
         }
 
         Group RemoteDesktop
@@ -231,7 +232,7 @@ Configuration PullServer
     {
         User Administrator
         {
-            Ensure           = 'Present' 
+            Ensure           = 'Present'
             UserName         = 'Administrator'
             Disabled         = $true
         }
@@ -245,11 +246,12 @@ Configuration PullServer
 
         xDSCWebService ODataEP
         {
-            Ensure                = 'Present' 
+            Ensure                = 'Present'
             EndpointName          = 'PSDSCPullServer'
             CertificateThumbPrint = $Node.PullCert
             ModulePath            = $Node.ModulePath
             ConfigurationPath     = $Node.ConfigurationPath
+            UseSecurityBestPractices = $false
             DependsOn             = '[WindowsFeature]DSCService'
         }
 
@@ -293,12 +295,12 @@ Configuration FileServer
         {
             xFirewall $rule.Name
             {
-                Ensure       = 'Present';
-                Access       = 'NotConfigured'
-                Name         = $rule.DisplayName;
-                Direction    = 'Inbound';
-                State        = 'Disabled';
-                Protocol     = $rule.Protocol;
+                Ensure       = 'Present'
+                Action       = 'NotConfigured'
+                Name         = $rule.DisplayName
+                Direction    = 'Inbound'
+                Enabled      = $false
+                Protocol     = $rule.Protocol
                 DependsOn    = '[xComputer]NameAndDomain'
             }
         }
@@ -306,12 +308,12 @@ Configuration FileServer
         xFirewall HttpsForPullServer
         {
             Ensure           = 'Present'
-            Access           = 'Allow'
+            Action           = 'Allow'
             Name             = 'DSC HTTPS'
-            RemotePort       = '8080';
-            Protocol         = 'TCP';
-            Direction        = 'Outbound';
-            State            = 'Enabled';
+            RemotePort       = '8080'
+            Protocol         = 'TCP'
+            Direction        = 'Outbound'
+            Enabled          = $true
             DependsOn        = '[xComputer]NameAndDomain'
         }
 
@@ -334,29 +336,29 @@ Configuration FileServer
         {
             xFirewall $rule.Name
             {
-                Ensure       = 'Present';
-                Name         = $rule.DisplayName;
-                Access       = 'NotConfigured'
-                Direction    = 'Inbound';
-                State        = 'Disabled';
-                Protocol     = $rule.Protocol;
+                Ensure       = 'Present'
+                Name         = $rule.DisplayName
+                Action       = 'NotConfigured'
+                Direction    = 'Inbound'
+                Enabled      = $false
+                Protocol     = $rule.Protocol
                 DependsOn    = '[WindowsFeature]FileServer'
             }
         }
-                        
+
         # Open selective ports & protocols
         foreach ($rule in $Node.AllowedInRules)
         {
             xFirewall $rule.Name
             {
-                Ensure       = 'Present';
-                Access       = 'Allow';
-                Name         = $rule.DisplayName;
-                LocalPort    = $rule.Port;
-                Protocol     = $rule.Protocol;
-                State        = 'Enabled';
-                Direction    = 'Inbound';
-                DependsOn    = '[WindowsFeature]FileServer' 
+                Ensure       = 'Present'
+                Action       = 'Allow'
+                Name         = $rule.DisplayName
+                LocalPort    = $rule.Port
+                Protocol     = $rule.Protocol
+                Enabled      = $true
+                Direction    = 'Inbound'
+                DependsOn    = '[WindowsFeature]FileServer'
             }
         }
 
@@ -371,7 +373,7 @@ Configuration FileServer
 
         User Administrator
         {
-            Ensure           = 'Present' 
+            Ensure           = 'Present'
             UserName         = 'Administrator'
             Disabled         = $true
         }
@@ -410,12 +412,12 @@ Configuration JeaManagementServer
             RunAsCredential        = (Import-CliXml $Node.RunAsCredFile)
             SecurityDescriptorSDDL = $Node.SDDL
             StartupScript          = $Node.StartupScript
-            DependsOn              = '[xComputer]NameAndDomain' 
+            DependsOn              = '[xComputer]NameAndDomain'
         }
 
         User Administrator
         {
-            Ensure           = 'Present' 
+            Ensure           = 'Present'
             UserName         = 'Administrator'
             Disabled         = $true
             DependsOn        = '[xPSEndpoint]Secure'
@@ -454,7 +456,7 @@ Configuration VirtualMachine
             VhdPath          = $Node.VHDDestinationPath -f $VMConfig.MachineName
             FileDirectory    = $VMConfig.FilesToCopy | % {
                                         MSFT_xFileDirectory {
-                                            SourcePath      =  $_.Source 
+                                            SourcePath      =  $_.Source
                                             DestinationPath =  $_.Destination
                                         }
             }
@@ -464,11 +466,11 @@ Configuration VirtualMachine
 
     xIPAddress HostNetwork
     {
-        IPAddress            = $Node.IPAddress
+        IPAddress            = ('{0}/{1}' -f $Node.IPAddress, $Node.PrefixLength)
+        AddressFamily        = 'IPv4'
         InterfaceAlias       = $Node.InterfaceAlias
-        SubnetMask           = $Node.PrefixLength
     }
- 
+
     xVMHyperV VirtualMachine
     {
         Name                 = $VMConfig.MachineName
@@ -476,8 +478,8 @@ Configuration VirtualMachine
         SwitchName           = $Node.SwitchName
         State                = $Node.VMState
         StartupMemory        = $VMConfig.MemorySizeofVM
-        MACAddress           = $VMConfig.MACAddress 
-        DependsOn            = '[xVhdFile]CopyToVhd'            
+        MACAddress           = $VMConfig.MACAddress
+        DependsOn            = '[xVhdFile]CopyToVhd'
     }
 
     WaitForAll WaitForVM
@@ -486,7 +488,7 @@ Configuration VirtualMachine
         NodeName             = @($VMConfig.MachineName)
         RetryintervalSec     = $Node.RetryintervalSec
         RetryCount           = $Node.RetryCount
-        Credential           = (Import-Clixml $VMConfig.AdminUserCredFile)
+        PsDscRunAsCredential = (Import-Clixml $VMConfig.AdminUserCredFile)
         DependsOn            = @('[xVMHyperV]VirtualMachine')
     }
 }
@@ -512,8 +514,8 @@ Configuration HyperVHost
         xVMSwitch VirtualSwitch
         {
             Ensure              = 'Present'
-            Name                = $Node.SwitchName 
-            Type                = $Node.SwitchType  
+            Name                = $Node.SwitchName
+            Type                = $Node.SwitchType
         }
     }
 }

@@ -47,6 +47,7 @@ If not specified, the script will prompt for:
 * Update appveyor.yml to use the default template.
 * Added default template files .codecov.yml, .gitattributes, and .gitignore, and
   .vscode folder.
+* Updated configuration SafeHarborConfiguration.psm1 to pass tests.
 
 ### 1.0.0.1
 
